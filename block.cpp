@@ -15,8 +15,6 @@ class Missle{
     double x, y, angle;
 public:
     Missle(double X, double Y, double angleRad): x(X), y(Y), angle(angleRad) { }
-//    Missle& operator=(const Missle& rhs){}
-//    Missle(const Missle& rhs){ *this = rhs; }
     bool isDead(){ return dead; }
     void move(){ 
 	x += MISSLE_SPEED * cos(angle);
@@ -37,8 +35,9 @@ class Game {
     bool right = false;
     bool fire  = false;
 
-    double gx = 0.0;
-    double gy = 0.0;
+    constexpr static double SHIP_SPEED = 0.003;
+    double x = 0.0;
+    double y = 0.0;
 //    std::vector<Block> blocks;
     std::vector<Missle> missles;
 public:
@@ -49,27 +48,45 @@ public:
 
 
 void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
+    // run+draw missles:
     SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE);
-    int x = 100.0 * cos(angle);
-    int y = 100.0 * sin(angle);
-    SDL_RenderDrawLine(rend, dm.w/2, dm.h/2, x+dm.w/2, y+dm.h/2);
-
-    std::stringstream ss;
-    ss << "a" << angle << " x" << x << " y" << y; // << " f" << fire? "1": "0";
-    pstr(rend, 10, 10, ss.str());
-
     missles.erase(std::remove_if(missles.begin(),missles.end(), [](Missle& m){ return m.isDead(); }), missles.end() );
 
     if(fire){
         fire = false;
-        missles.emplace_back(gx,gy,angle);
+        missles.emplace_back(x, y, angle);
     }
 
     for(Missle& m: missles){
         m.move();
         m.draw(rend, dm);
     }
-    // TODO: move the gun
+
+    // run + draw the ship:
+    SDL_SetRenderDrawColor(rend, 0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE);
+    double s = left  ?  SHIP_SPEED : 0;
+           s = right ? -SHIP_SPEED : s;
+
+    x += s * cos(angle);
+    y += s * sin(angle);
+
+    int px = x*dm.w/2+dm.w/2;
+    int py = y*dm.h/2+dm.h/2;
+    SDL_RenderDrawPoint(rend, px, py);
+    SDL_RenderDrawPoint(rend, px-1, py-1);
+    SDL_RenderDrawPoint(rend, px+1, py+1);
+    SDL_RenderDrawPoint(rend, px-1, py+1);
+    SDL_RenderDrawPoint(rend, px+1, py-1);
+     
+    // draw some debugging stuff:
+    SDL_SetRenderDrawColor(rend, 0x00, 0x00, 0xFF, SDL_ALPHA_OPAQUE);
+    int vx = 30.0 * cos(angle);
+    int vy = 30.0 * sin(angle);
+    SDL_RenderDrawLine(rend, 50, 50, vx+50, vy+50);
+
+    std::stringstream ss;
+    ss << angle;
+    pstr(rend, 10, 10, ss.str());
 }
 
 
@@ -97,7 +114,7 @@ int main(int argc, char* argv[]){
     if(0==renderer){ exitSDLerr(); }
 
     SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP); // SDL_WINDOW_FULLSCREEN for different resolution
-//    SDL_ShowCursor(SDL_DISABLE);
+    SDL_ShowCursor(SDL_DISABLE);
 
     SDL_DisplayMode dm;
     SDL_GetCurrentDisplayMode(0, &dm);
