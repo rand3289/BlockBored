@@ -2,10 +2,33 @@
 #include <SDL2/SDL.h> // Simple Directmedia Layer lib has to be installed
 #include <cmath>
 #include <vector>
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <sstream>
 extern void pstr(SDL_Renderer* renderer, int x, int y, const std::string& str); // from sdltxt.cpp
+
+
+class Missle{
+    constexpr static double MISSLE_SPEED = 0.01;
+    bool dead = false;
+    double x, y, angle;
+public:
+    Missle(double X, double Y, double angleRad): x(X), y(Y), angle(angleRad) { }
+//    Missle& operator=(const Missle& rhs){}
+//    Missle(const Missle& rhs){ *this = rhs; }
+    bool isDead(){ return dead; }
+    void move(){ 
+	x += MISSLE_SPEED * cos(angle);
+        y += MISSLE_SPEED * sin(angle);
+        if(x < -1.0 || x > 1.0 || y < -1.0 || y > 1.0){ dead = true; }
+    }
+    void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
+        int px = x*dm.w/2+dm.w/2;
+        int py = y*dm.h/2+dm.h/2;
+        SDL_RenderDrawPoint(rend, px, py);
+    }
+};
 
 
 class Game {
@@ -13,13 +36,17 @@ class Game {
     bool left  = false;
     bool right = false;
     bool fire  = false;
+
+    double gx = 0.0;
+    double gy = 0.0;
 //    std::vector<Block> blocks;
-//    std::vector<Missle> missles;
+    std::vector<Missle> missles;
 public:
     void shoot(){ fire = true; }
     void move(double angleRad, bool leftBtn, bool rightBtn){ angle = angleRad; left = leftBtn; right = rightBtn; }
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm);
 };
+
 
 void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
     SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE);
@@ -30,6 +57,19 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
     std::stringstream ss;
     ss << "a" << angle << " x" << x << " y" << y; // << " f" << fire? "1": "0";
     pstr(rend, 10, 10, ss.str());
+
+    missles.erase(std::remove_if(missles.begin(),missles.end(), [](Missle& m){ return m.isDead(); }), missles.end() );
+
+    if(fire){
+        fire = false;
+        missles.emplace_back(gx,gy,angle);
+    }
+
+    for(Missle& m: missles){
+        m.move();
+        m.draw(rend, dm);
+    }
+    // TODO: move the gun
 }
 
 
@@ -68,7 +108,7 @@ int main(int argc, char* argv[]){
     while(run){
         while( SDL_PollEvent( &e ) ){
 	    if(e.type == SDL_QUIT){ run=false; }
-	    else if(e.type == SDL_KEYUP){
+	    else if(e.type == SDL_KEYDOWN){
                 switch(e.key.keysym.sym){
 		    case SDLK_ESCAPE:
 	            case SDLK_q:      run=false;        break;
