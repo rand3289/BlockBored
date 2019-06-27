@@ -1,16 +1,36 @@
 // block bored game
 #include <SDL2/SDL.h> // Simple Directmedia Layer lib has to be installed
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include <string>
+#include <sstream>
 extern void pstr(SDL_Renderer* renderer, int x, int y, const std::string& str); // from sdltxt.cpp
 
 
-class Game{
+class Game {
+    double angle = 0.0;
+    bool left  = false;
+    bool right = false;
+    bool fire  = false;
+//    std::vector<Block> blocks;
+//    std::vector<Missle> missles;
 public:
-  void run(SDL_Renderer* rend){}
-  void shoot(){}
+    void shoot(){ fire = true; }
+    void move(double angleRad, bool leftBtn, bool rightBtn){ angle = angleRad; left = leftBtn; right = rightBtn; }
+    void draw(SDL_Renderer* rend, SDL_DisplayMode& dm);
 };
+
+void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
+    SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE);
+    int x = 100.0 * cos(angle);
+    int y = 100.0 * sin(angle);
+    SDL_RenderDrawLine(rend, dm.w/2, dm.h/2, x+dm.w/2, y+dm.h/2);
+
+    std::stringstream ss;
+    ss << "a" << angle << " x" << x << " y" << y; // << " f" << fire? "1": "0";
+    pstr(rend, 10, 10, ss.str());
+}
 
 
 void toggleFS(SDL_Window* win){
@@ -37,6 +57,7 @@ int main(int argc, char* argv[]){
     if(0==renderer){ exitSDLerr(); }
 
     SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP); // SDL_WINDOW_FULLSCREEN for different resolution
+//    SDL_ShowCursor(SDL_DISABLE);
 
     SDL_DisplayMode dm;
     SDL_GetCurrentDisplayMode(0, &dm);
@@ -51,14 +72,18 @@ int main(int argc, char* argv[]){
                 switch(e.key.keysym.sym){
 		    case SDLK_ESCAPE:
 	            case SDLK_q:      run=false;        break;
-                    case SDLK_RETURN: toggleFS(window); break;
+                    case SDLK_RETURN: toggleFS(window); SDL_GetCurrentDisplayMode(0, &dm); break;
 	            case SDLK_SPACE:  game.shoot();     break;
-//	            case SDLK_LEFT:   delta.y  -=DX;    break;
-//	            case SDLK_RIGHT:  delta.y  +=DX;    break;
-//	            case SDLK_UP:     delta.x  -=DX;    break;
-//	            case SDLK_DOWN:   delta.x  +=DX;    break;
 	        }
             }
+	    else if (e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP){
+                int x,y;
+	        Uint32 state = SDL_GetMouseState(&x, &y);
+		double angle = atan2(dm.h/2-y, dm.w/2-x); // translate (x,y) vector to polar coordinates' angle [-Pi,+Pi]
+		bool left = state & SDL_BUTTON(SDL_BUTTON_LEFT);
+		bool right = state & SDL_BUTTON(SDL_BUTTON_RIGHT);
+		game.move(angle, left, right);
+	    }
 	}
 
         SDL_SetRenderDrawBlendMode(renderer,SDL_BLENDMODE_NONE);
@@ -66,7 +91,7 @@ int main(int argc, char* argv[]){
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawBlendMode(renderer,SDL_BLENDMODE_ADD);
 
-	game.run(renderer);
+	game.draw(renderer, dm);
 
         SDL_RenderPresent(renderer);
         SDL_Delay( 16 ); // less than 60fps

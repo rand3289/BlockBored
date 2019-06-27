@@ -21,6 +21,15 @@ const std::string letters =
 "#     # #     # #     # #     # #       #       #     # #     #    #    #     # #   #   #       #     # #    ## #     # #       #    #  #    #  #     #    #    #     #   # #   #  #  #  #   #     #     #      "\
 "#     # ######   #####  ######  ####### #        #####  #     #   ###    #####  #    #  ####### #     # #     # ####### #        #### # #     #  #####     #     #####     #     ## ##  #     #    #    ####### ";
 
+const std::string other =
+"                "\
+"                "\
+"                "\
+" #####          "\
+"                "\
+"          ###   "\
+"          ###   ";
+
 const int CW = 8; // Char Width
 const int CH = 7; // Char Height
 
@@ -38,7 +47,13 @@ void pchar(SDL_Renderer* renderer, int x, int y, char c){
     } else if ('A' <= c && c <= 'Z'){
         idx = c-'A';
     } else {
-        return;
+        font = &other;
+        width = 2*CW;
+	switch(c){
+	  case '-': idx = 0; break;
+	  case '.': idx = 1; break;
+	  default: return;
+	}
     }
 
     for(int dy=0; dy<CH; ++dy){
