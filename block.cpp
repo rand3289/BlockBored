@@ -13,6 +13,7 @@ class Missle{
     constexpr static double MISSLE_SPEED = 0.01;
     bool dead = false;
     double fx, fy, angle;
+    friend class Game;
 public:
     Missle(double X, double Y, double angleRad): fx(X), fy(Y), angle(angleRad) { }
     bool isDead(){ return dead; }
@@ -31,14 +32,17 @@ public:
 class Block: public SDL_Rect{
     double fx, fy, angle; // SPEED
     unsigned char r,g,b;
+    double size = 0.03;
 public:
-    Block(double X, double Y): fx(X), fy(Y) {
+    Block(double X, double Y, SDL_DisplayMode& dm): fx(X), fy(Y) {
         r = rand()%200+50;
         g = rand()%200+50;
         b = rand()%200+50;
-        w = 10;
-        h = 10;
+        w = dm.w/2 * size;
+        h = dm.h/2 * size;
     }
+
+    bool collision(double otherx, double othery){ return fx<= otherx && fx+size >= otherx && fy<= othery && fy+size >= othery;  }
 
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){ 
         SDL_SetRenderDrawColor(rend, r, g, b, SDL_ALPHA_OPAQUE);
@@ -61,17 +65,16 @@ class Game {
     std::vector<Block> blocks;
     std::vector<Missle> missles;
 public:
-    void init();
-    Game(){ init(); }
+    void init(SDL_DisplayMode& dm);
     void shoot(){ fire = true; }
     void move(double angleRad, bool leftBtn, bool rightBtn){ angle = angleRad; left = leftBtn; right = rightBtn; }
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm);
 };
 
 
-void Game::init(){
+void Game::init(SDL_DisplayMode& dm){
     for(int i =0; i < 50; ++i){
-        blocks.emplace_back( (rand()%1000-500)/500.0, (rand()%1000-500)/500.0 );
+        blocks.emplace_back( (rand()%1000-500)/500.0, (rand()%1000-500)/500.0, dm );
     }
 }
 
@@ -92,6 +95,11 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
 
     SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE); // missles are all same color
     for(Missle& m: missles){
+        for(Block& b: blocks){ // detect missle collisions hack
+	    if(b.collision(m.fx, m.fy)){
+                m.dead = true;
+	    }
+	}
         m.draw(rend, dm);
     }
 
@@ -153,6 +161,8 @@ int main(int argc, char* argv[]){
     SDL_GetCurrentDisplayMode(0, &dm);
 
     Game game;
+    game.init(dm);
+
     SDL_Event e;
     bool run = true;
     while(run){
