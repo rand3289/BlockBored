@@ -1,40 +1,6 @@
-#include <SDL2/SDL.h>
-#include <string>
-#include <memory>
-#include <vector>
+#include "sdlaudio.h"
 #include <algorithm> // remove_if()
 using namespace std;
-
-class Audio;
-
-class AudioData {
-    friend Audio;
-    float balance; // [0.0 through 1.0]
-    Uint32 pos;
-
-    SDL_AudioSpec wav_spec;
-    Uint32 wav_length;
-    Uint8 *wav_buffer; // shared_ptr<Uint8> buffer; would be nice
-public:
-    AudioData(): balance(0.5) {}
-    AudioData(double balancE): balance(balancE) {}
-    ~AudioData(){ SDL_FreeWAV(wav_buffer); }
-    bool donePlaying() const { return pos == wav_length; }
-    void load(const std::string& fileName);
-};
-
-
-class Audio{
-    SDL_AudioDeviceID dev;
-    SDL_AudioSpec want, have;
-    std::vector<std::shared_ptr<AudioData> > audioData;
-    void init();
-public:
-    Audio(){ init(); }
-    ~Audio(){ SDL_CloseAudioDevice(dev); }
-    void mix(Uint8 *stream, int len); // callback
-    void play(const std::shared_ptr<AudioData>& data);
-};
 
 
 void AudioData::load(const std::string& fileName){
