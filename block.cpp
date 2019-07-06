@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <memory>
+#include "sdlaudio.h"
 extern void pstr(SDL_Renderer* renderer, int x, int y, const std::string& str); // from sdltxt.cpp
 
 
@@ -160,6 +162,9 @@ int main(int argc, char* argv[]){
     SDL_DisplayMode dm;
     SDL_GetCurrentDisplayMode(0, &dm);
 
+    Audio audio;
+    std::shared_ptr<AudioData> snd1 = std::make_shared<AudioData>("hamwal1.wav");
+
     Game game;
     game.init(dm);
 
@@ -173,7 +178,7 @@ int main(int argc, char* argv[]){
 		    case SDLK_ESCAPE:
 	            case SDLK_q:      run=false;        break;
                     case SDLK_RETURN: toggleFS(window); SDL_GetCurrentDisplayMode(0, &dm); break;
-	            case SDLK_SPACE:  game.shoot();     break;
+	            case SDLK_SPACE:  game.shoot(); audio.play(snd1); break;
 	        }
             }
 	    else if (e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP){

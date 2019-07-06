@@ -12,10 +12,12 @@ class Audio;
 class AudioData {
     friend Audio;
     SDL_AudioSpec wav_spec;
-    Uint32 wav_length;
-    Uint32 pos;
-    Uint8 *wav_buffer; // shared_ptr<Uint8> buffer; would be nice
+    Uint32 pos = 0;
+    Uint32 wav_length = 0;
+    Uint8 *wav_buffer = nullptr; // shared_ptr<Uint8> buffer; would be nice
 public:
+    AudioData() {}
+    AudioData(const std::string& fileName){ load(fileName); }
     ~AudioData(){ SDL_FreeWAV(wav_buffer); }
     bool donePlaying() const { return pos == wav_length; }
     void load(const std::string& fileName);
@@ -31,7 +33,7 @@ public:
     Audio(){ init(); }
     ~Audio(){ SDL_CloseAudioDevice(dev); }
     void mix(Uint8 *stream, int len); // callback
-    void play(const std::shared_ptr<AudioData>& data);
+    void play(std::shared_ptr<AudioData>& data);
 };
 
 
