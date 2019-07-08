@@ -1,6 +1,6 @@
 // block bored game
 #include <SDL2/SDL.h> // Simple Directmedia Layer lib has to be installed
-#include <cmath>
+#include <cmath> // M_PI, sin, cos
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -32,21 +32,33 @@ public:
 
 
 class Block: public SDL_Rect{
-    double fx, fy, angle; // SPEED
+    constexpr static double SPEED = 0.001;
+    bool dead = false;
+    double fx, fy, angle;
+    friend class Game;
+
     unsigned char r,g,b;
     double size = 0.03;
 public:
     Block(double X, double Y, SDL_DisplayMode& dm): fx(X), fy(Y) {
-        r = rand()%200+50;
-        g = rand()%200+50;
-        b = rand()%200+50;
+        angle = (rand()%(2*31415))/1000.0;
+        r = rand()%230+20;
+        g = rand()%230+20;
+        b = rand()%230+20;
         w = dm.w/2 * size;
         h = dm.h/2 * size;
     }
 
     bool collision(double otherx, double othery){ return fx<= otherx && fx+size >= otherx && fy<= othery && fy+size >= othery;  }
+    bool isDead(){ return dead; }
 
-    void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){ 
+    void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
+	fx += SPEED * cos(angle); // make em move
+        fy += SPEED * sin(angle);
+
+        if(fx < -1.0 || fx > 1.0-size){ angle = M_PI-angle; } // make em bounce off the walls
+        if(fy < -1.0 || fy > 1.0-size){ angle = 2.0*M_PI-angle; }
+
         SDL_SetRenderDrawColor(rend, r, g, b, SDL_ALPHA_OPAQUE);
         x = fx*dm.w/2+dm.w/2;
         y = fy*dm.h/2+dm.h/2;
@@ -87,8 +99,10 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
         b.draw(rend, dm);
     }
 
+    blocks.erase(std::remove_if(blocks.begin(), blocks.end(), [](Block& b){ return b.isDead(); }), blocks.end() );
+
     // draw missles:
-    missles.erase(std::remove_if(missles.begin(),missles.end(), [](Missle& m){ return m.isDead(); }), missles.end() );
+    missles.erase(std::remove_if(missles.begin(), missles.end(), [](Missle& m){ return m.isDead(); }), missles.end() );
 
     if(fire){
         fire = false;
@@ -100,6 +114,7 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
         for(Block& b: blocks){ // detect missle collisions hack
 	    if(b.collision(m.fx, m.fy)){
                 m.dead = true;
+                b.dead = true;
 	    }
 	}
         m.draw(rend, dm);
@@ -131,6 +146,9 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
     ss << angle;
     pstr(rend, 10, 10, ss.str());
 }
+
+
+/******************************* END GAME OBJECTS DEFINITIONS ******************/
 
 
 void toggleFS(SDL_Window* win){
