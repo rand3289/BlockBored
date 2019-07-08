@@ -32,9 +32,9 @@ public:
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
         move();
         if(fx < -1.0 || fx > 1.0 || fy < -1.0 || fy > 1.0){ dead = true; }
-        int px = fx*dm.w/2+dm.w/2;
-        int py = fy*dm.h/2+dm.h/2;
-        SDL_RenderDrawPoint(rend, px, py);
+        int x = fx*dm.w/2+dm.w/2;
+        int y = fy*dm.h/2+dm.h/2;
+        SDL_RenderDrawPoint(rend, x, y);
     }
 };
 
@@ -66,21 +66,49 @@ public:
 };
 
 
-class Game {
-    constexpr static double SPEED = 0.003;
-    double fx = 0.0;
-    double fy = 0.0;
-    double angle = 0.0;
+class Ship: public Item {
+public:
+    Ship(double x, double y, double speed): Item(x, y, speed) {}
+    void draw(SDL_Renderer* rend, SDL_DisplayMode& dm, bool left, bool right){
+        double s = left  ?  SPEED : 0;
+               s = right ? -SPEED : s;
+        fx += s * cos(angle);
+        fy += s * sin(angle);
 
+        SDL_SetRenderDrawColor(rend, 0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE);
+        int x = fx*dm.w/2+dm.w/2;
+        int y = fy*dm.h/2+dm.h/2;
+        SDL_RenderDrawPoint(rend, x, y);
+        SDL_RenderDrawPoint(rend, x-1, y);
+        SDL_RenderDrawPoint(rend, x+1, y);
+        SDL_RenderDrawPoint(rend, x, y+1);
+        SDL_RenderDrawPoint(rend, x, y-1);
+
+        // draw the ship's angle
+        SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE);
+        int vx = 30.0 * cos(angle);
+        int vy = 30.0 * sin(angle);
+        SDL_RenderDrawLine(rend, 50, 50, vx+50, vy+50);
+
+        std::stringstream ss;
+        ss << angle;
+        pstr(rend, 10, 10, ss.str());
+    }
+};
+
+
+class Game {
     bool left  = false;
     bool right = false;
     bool fire  = false;
+    Ship ship;
     std::vector<Block> blocks;
     std::vector<Missle> missles;
 public:
+    Game(): ship(0.0, 0.0, 0.003) {}
     void init(SDL_DisplayMode& dm);
     void shoot(){ fire = true; }
-    void ctl(double angleRad, bool leftBtn, bool rightBtn){ angle = angleRad; left = leftBtn; right = rightBtn; }
+    void ctl(double angleRad, bool leftBtn, bool rightBtn){ ship.angle = angleRad; left = leftBtn; right = rightBtn; }
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm);
 };
 
@@ -93,57 +121,30 @@ void Game::init(SDL_DisplayMode& dm){
 
 
 void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
-    // draw blocks:
     for(Block& b: blocks){
         b.draw(rend, dm);
     }
 
     blocks.erase(std::remove_if(blocks.begin(), blocks.end(), [](Block& b){ return b.isDead(); }), blocks.end() );
-
-    // draw missles:
     missles.erase(std::remove_if(missles.begin(), missles.end(), [](Missle& m){ return m.isDead(); }), missles.end() );
 
     if(fire){
         fire = false;
-        missles.emplace_back(fx, fy, angle); // current x,y,angle of the ship
+        missles.emplace_back(ship.fx, ship.fy, ship.angle);
     }
 
-    SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE); // missles are all same color
+    SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE); // missles are all the same color
     for(Missle& m: missles){
+        m.draw(rend, dm);
         for(Block& b: blocks){ // detect missle collisions hack
 	    if(b.collision(m.fx, m.fy)){
                 m.dead = true;
                 b.dead = true;
 	    }
 	}
-        m.draw(rend, dm);
     }
 
-    // draw the ship:
-    SDL_SetRenderDrawColor(rend, 0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE);
-    double s = left  ?  SPEED : 0;
-           s = right ? -SPEED : s;
-
-    fx += s * cos(angle);
-    fy += s * sin(angle);
-
-    int px = fx*dm.w/2+dm.w/2;
-    int py = fy*dm.h/2+dm.h/2;
-    SDL_RenderDrawPoint(rend, px, py);
-    SDL_RenderDrawPoint(rend, px-1, py-1);
-    SDL_RenderDrawPoint(rend, px+1, py+1);
-    SDL_RenderDrawPoint(rend, px-1, py+1);
-    SDL_RenderDrawPoint(rend, px+1, py-1);
-
-    // draw some debugging stuff:
-    SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE);
-    int vx = 30.0 * cos(angle);
-    int vy = 30.0 * sin(angle);
-    SDL_RenderDrawLine(rend, 50, 50, vx+50, vy+50);
-
-    std::stringstream ss;
-    ss << angle;
-    pstr(rend, 10, 10, ss.str());
+    ship.draw(rend, dm, left, right);
 }
 
 
