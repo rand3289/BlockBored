@@ -78,17 +78,13 @@ public:
         SDL_SetRenderDrawColor(rend, 0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE);
         int x = fx*dm.w/2+dm.w/2;
         int y = fy*dm.h/2+dm.h/2;
-        SDL_RenderDrawPoint(rend, x, y);
-        SDL_RenderDrawPoint(rend, x-1, y);
-        SDL_RenderDrawPoint(rend, x+1, y);
-        SDL_RenderDrawPoint(rend, x, y+1);
-        SDL_RenderDrawPoint(rend, x, y-1);
-
-        // draw the ship's angle
-        SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE);
-        int vx = 30.0 * cos(angle);
-        int vy = 30.0 * sin(angle);
-        SDL_RenderDrawLine(rend, 50, 50, vx+50, vy+50);
+        int vx = 15.0 * cos(angle);
+        int vy = 15.0 * sin(angle);
+        SDL_RenderDrawLine(rend, x, y, x+vx, y+vy);
+        SDL_RenderDrawPoint(rend, x-2, y);
+        SDL_RenderDrawPoint(rend, x+2, y);
+        SDL_RenderDrawPoint(rend, x, y+2);
+        SDL_RenderDrawPoint(rend, x, y-2);
     }
 };
 
