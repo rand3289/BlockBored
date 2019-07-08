@@ -11,8 +11,18 @@
 extern void pstr(SDL_Renderer* renderer, int x, int y, const std::string& str); // from sdltxt.cpp
 
 
+class Item {
+    const double SPEED = 0.01;
+    double fx, fy, angle;
+    bool dead = false;
+    friend class Game;
+public:
+    Item(double x, double y, double speed): fx(x), fy(y), SPEED(speed) { angle = (rand()%(2*31415))/1000.0; }
+    bool isDead(){ return dead; }
+};
+
 class Missle{
-    constexpr static double MISSLE_SPEED = 0.01;
+    constexpr static double SPEED = 0.01;
     bool dead = false;
     double fx, fy, angle;
     friend class Game;
@@ -20,8 +30,8 @@ public:
     Missle(double X, double Y, double angleRad): fx(X), fy(Y), angle(angleRad) { }
     bool isDead(){ return dead; }
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
-	fx += MISSLE_SPEED * cos(angle);
-        fy += MISSLE_SPEED * sin(angle);
+	fx += SPEED * cos(angle);
+        fy += SPEED * sin(angle);
         if(fx < -1.0 || fx > 1.0 || fy < -1.0 || fy > 1.0){ dead = true; }
 
         int px = fx*dm.w/2+dm.w/2;
@@ -68,14 +78,14 @@ public:
 
 
 class Game {
+    constexpr static double SPEED = 0.003;
+    double fx = 0.0;
+    double fy = 0.0;
     double angle = 0.0;
+
     bool left  = false;
     bool right = false;
     bool fire  = false;
-
-    constexpr static double SHIP_SPEED = 0.003;
-    double x = 0.0;
-    double y = 0.0;
     std::vector<Block> blocks;
     std::vector<Missle> missles;
 public:
@@ -106,7 +116,7 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
 
     if(fire){
         fire = false;
-        missles.emplace_back(x, y, angle); // current x,y,angle of the ship
+        missles.emplace_back(fx, fy, angle); // current x,y,angle of the ship
     }
 
     SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE); // missles are all same color
@@ -122,14 +132,14 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
 
     // draw the ship:
     SDL_SetRenderDrawColor(rend, 0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE);
-    double s = left  ?  SHIP_SPEED : 0;
-           s = right ? -SHIP_SPEED : s;
+    double s = left  ?  SPEED : 0;
+           s = right ? -SPEED : s;
 
-    x += s * cos(angle);
-    y += s * sin(angle);
+    fx += s * cos(angle);
+    fy += s * sin(angle);
 
-    int px = x*dm.w/2+dm.w/2;
-    int py = y*dm.h/2+dm.h/2;
+    int px = fx*dm.w/2+dm.w/2;
+    int py = fy*dm.h/2+dm.h/2;
     SDL_RenderDrawPoint(rend, px, py);
     SDL_RenderDrawPoint(rend, px-1, py-1);
     SDL_RenderDrawPoint(rend, px+1, py+1);
