@@ -12,28 +12,26 @@ extern void pstr(SDL_Renderer* renderer, int x, int y, const std::string& str); 
 
 
 class Item {
-    const double SPEED = 0.01;
-    double fx, fy, angle;
+protected:
+    double fx, fy, angle, SPEED;
     bool dead = false;
     friend class Game;
 public:
     Item(double x, double y, double speed): fx(x), fy(y), SPEED(speed) { angle = (rand()%(2*31415))/1000.0; }
     bool isDead(){ return dead; }
-};
-
-class Missle{
-    constexpr static double SPEED = 0.01;
-    bool dead = false;
-    double fx, fy, angle;
-    friend class Game;
-public:
-    Missle(double X, double Y, double angleRad): fx(X), fy(Y), angle(angleRad) { }
-    bool isDead(){ return dead; }
-    void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
+    void move(){
 	fx += SPEED * cos(angle);
         fy += SPEED * sin(angle);
-        if(fx < -1.0 || fx > 1.0 || fy < -1.0 || fy > 1.0){ dead = true; }
+    }
+};
 
+
+class Missle: public Item {
+public:
+    Missle(double X, double Y, double angleRad): Item(X, Y, 0.02) { angle = angleRad; }
+    void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
+        move();
+        if(fx < -1.0 || fx > 1.0 || fy < -1.0 || fy > 1.0){ dead = true; }
         int px = fx*dm.w/2+dm.w/2;
         int py = fy*dm.h/2+dm.h/2;
         SDL_RenderDrawPoint(rend, px, py);
@@ -91,7 +89,7 @@ class Game {
 public:
     void init(SDL_DisplayMode& dm);
     void shoot(){ fire = true; }
-    void move(double angleRad, bool leftBtn, bool rightBtn){ angle = angleRad; left = leftBtn; right = rightBtn; }
+    void ctl(double angleRad, bool leftBtn, bool rightBtn){ angle = angleRad; left = leftBtn; right = rightBtn; }
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm);
 };
 
@@ -215,7 +213,7 @@ int main(int argc, char* argv[]){
 		double angle = atan2(dm.h/2-y, dm.w/2-x); // translate (x,y) vector to polar coordinates' angle [-Pi,+Pi]
 		bool left = state & SDL_BUTTON(SDL_BUTTON_LEFT);
 		bool right = state & SDL_BUTTON(SDL_BUTTON_RIGHT);
-		game.move(angle, left, right);
+		game.ctl(angle, left, right);
 	    }
 	}
 
