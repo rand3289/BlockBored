@@ -17,7 +17,7 @@ protected:
     bool dead = false;
     friend class Game;
 public:
-    Item(double x, double y, double speed): fx(x), fy(y), SPEED(speed), size(-1) { angle = (rand()%(2*31415))/1000.0; }
+    Item(double x, double y, double speed): fx(x), fy(y), SPEED(speed), size(0) { angle = (rand()%(2*31415))/1000.0; }
     bool isDead(){ return dead; }
     bool collision(const Item& it) const { return fx<= it.fx && fx+size >= it.fx && fy<= it.fy && fy+size >= it.fy;  }
     void move(){
@@ -89,10 +89,6 @@ public:
         int vx = 30.0 * cos(angle);
         int vy = 30.0 * sin(angle);
         SDL_RenderDrawLine(rend, 50, 50, vx+50, vy+50);
-
-        std::stringstream ss;
-        ss << angle;
-        pstr(rend, 10, 10, ss.str());
     }
 };
 
@@ -101,14 +97,15 @@ class Game {
     bool left  = false;
     bool right = false;
     bool fire  = false;
+    int score = 0;
     Ship ship;
     std::vector<Block> blocks;
     std::vector<Missle> missles;
 public:
     Game(): ship(0.0, 0.0, 0.003) {}
-    void init(SDL_DisplayMode& dm);
     void shoot(){ fire = true; }
     void ctl(double angleRad, bool leftBtn, bool rightBtn){ ship.angle = angleRad; left = leftBtn; right = rightBtn; }
+    void init(SDL_DisplayMode& dm);
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm);
 };
 
@@ -121,8 +118,8 @@ void Game::init(SDL_DisplayMode& dm){
 
 
 void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
-    blocks.erase(std::remove_if(blocks.begin(), blocks.end(), [](Block& b){ return b.isDead(); }), blocks.end() );
     missles.erase(std::remove_if(missles.begin(), missles.end(), [](Missle& m){ return m.isDead(); }), missles.end() );
+     blocks.erase(std::remove_if( blocks.begin(),  blocks.end(), []( Block& b){ return b.isDead(); }),  blocks.end() );
 
     for(Block& b: blocks){
         b.draw(rend, dm);
@@ -130,7 +127,7 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
 
     if(fire){
         fire = false;
-        missles.emplace_back(ship.fx, ship.fy, ship.angle);
+        missles.emplace_back(ship.fx, ship.fy, ship.angle); // it's good to be a friend :)
     }
 
     SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE); // missles are all the same color
@@ -140,15 +137,18 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
 	    if(b.collision(m)){ // detect a missle collision with a block
                 m.dead = true;
                 b.dead = true;
+                ++score;
 	    }
 	}
     }
 
     ship.draw(rend, dm, left, right);
+
+    std::stringstream ss;
+    ss << score;
+    pstr(rend, 10, 10, ss.str());
+
 }
-
-
-/******************************* END GAME OBJECTS DEFINITIONS ******************/
 
 
 void toggleFS(SDL_Window* win){
