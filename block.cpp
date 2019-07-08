@@ -13,12 +13,13 @@ extern void pstr(SDL_Renderer* renderer, int x, int y, const std::string& str); 
 
 class Item {
 protected:
-    double fx, fy, angle, SPEED;
+    double fx, fy, angle, SPEED, size;
     bool dead = false;
     friend class Game;
 public:
-    Item(double x, double y, double speed): fx(x), fy(y), SPEED(speed) { angle = (rand()%(2*31415))/1000.0; }
+    Item(double x, double y, double speed): fx(x), fy(y), SPEED(speed), size(-1) { angle = (rand()%(2*31415))/1000.0; }
     bool isDead(){ return dead; }
+    bool collision(const Item& it) const { return fx<= it.fx && fx+size >= it.fx && fy<= it.fy && fy+size >= it.fy;  }
     void move(){
 	fx += SPEED * cos(angle);
         fy += SPEED * sin(angle);
@@ -39,19 +40,17 @@ public:
 };
 
 
-class Block: public SDL_Rect, public Item {
+class Block: public Item, public SDL_Rect {
     unsigned char r,g,b;
-    double size = 0.03;
 public:
     Block(double X, double Y, SDL_DisplayMode& dm): Item(X, Y, 0.001) {
         r = rand()%230+20;
         g = rand()%230+20;
         b = rand()%230+20;
+        size = 0.03;       // Item member
         w = dm.w/2 * size; // SDL_Rect member
         h = dm.h/2 * size; // SDL_Rect member
     }
-
-    bool collision(double otherx, double othery){ return fx<= otherx && fx+size >= otherx && fy<= othery && fy+size >= othery;  }
 
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
         move();
@@ -121,12 +120,12 @@ void Game::init(SDL_DisplayMode& dm){
 
 
 void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
+    blocks.erase(std::remove_if(blocks.begin(), blocks.end(), [](Block& b){ return b.isDead(); }), blocks.end() );
+    missles.erase(std::remove_if(missles.begin(), missles.end(), [](Missle& m){ return m.isDead(); }), missles.end() );
+
     for(Block& b: blocks){
         b.draw(rend, dm);
     }
-
-    blocks.erase(std::remove_if(blocks.begin(), blocks.end(), [](Block& b){ return b.isDead(); }), blocks.end() );
-    missles.erase(std::remove_if(missles.begin(), missles.end(), [](Missle& m){ return m.isDead(); }), missles.end() );
 
     if(fire){
         fire = false;
@@ -136,8 +135,8 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
     SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE); // missles are all the same color
     for(Missle& m: missles){
         m.draw(rend, dm);
-        for(Block& b: blocks){ // detect missle collisions hack
-	    if(b.collision(m.fx, m.fy)){
+        for(Block& b: blocks){
+	    if(b.collision(m)){ // detect a missle collision with a block
                 m.dead = true;
                 b.dead = true;
 	    }
