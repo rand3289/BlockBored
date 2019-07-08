@@ -40,16 +40,17 @@ public:
 };
 
 
-class Block: public Item, public SDL_Rect {
+class Block: public Item {
     unsigned char r,g,b;
+    SDL_Rect loc;
 public:
     Block(double X, double Y, SDL_DisplayMode& dm): Item(X, Y, 0.001) {
         r = rand()%230+20;
         g = rand()%230+20;
         b = rand()%230+20;
-        size = 0.03;       // Item member
-        w = dm.w/2 * size; // SDL_Rect member
-        h = dm.h/2 * size; // SDL_Rect member
+        size = 0.03;       // Item::size
+        loc.w = dm.w/2 * size;
+        loc.h = dm.h/2 * size;
     }
 
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
@@ -58,9 +59,9 @@ public:
         if(fy < -1.0 || fy > 1.0-size){ angle = 2.0*M_PI-angle; }
 
         SDL_SetRenderDrawColor(rend, r, g, b, SDL_ALPHA_OPAQUE);
-        x = fx*dm.w/2+dm.w/2; // SDL_Rect member
-        y = fy*dm.h/2+dm.h/2; // SDL_Rect member
-        SDL_RenderFillRect(rend, this);
+        loc.x = fx*dm.w/2+dm.w/2;
+        loc.y = fy*dm.h/2+dm.h/2;
+        SDL_RenderFillRect(rend, &loc);
     }
 };
 
@@ -69,7 +70,7 @@ class Ship: public Item {
 public:
     Ship(double x, double y, double speed): Item(x, y, speed) {}
     void draw(SDL_Renderer* rend, SDL_DisplayMode& dm, bool left, bool right){
-        double s = left  ?  SPEED : 0;
+        double s = left  ?  SPEED : 0; // instead of move()
                s = right ? -SPEED : s;
         fx += s * cos(angle);
         fy += s * sin(angle);
