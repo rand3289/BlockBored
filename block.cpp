@@ -126,7 +126,7 @@ void Game::draw(SDL_Renderer* rend, SDL_DisplayMode& dm){
         missles.emplace_back(ship.fx, ship.fy, ship.angle); // it's good to be a friend :)
     }
 
-    SDL_SetRenderDrawColor(rend, 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE); // missles are all the same color
+    SDL_SetRenderDrawColor(rend, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE); // missles are all the same color
     for(Missle& m: missles){
         m.draw(rend, dm);
         for(Block& b: blocks){
