@@ -182,6 +182,10 @@ int main(int argc, char* argv[]){
     Game game;
     game.init(dm);
 
+    SDL_Surface* img = SDL_LoadBMP( "planet.bmp" ); // 100x100 pixels
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, img);
+    SDL_Rect imgLoc = { (dm.w/2)-50, (dm.h/2)-50, 100, 100 };
+
     SDL_Event e;
     bool run = true;
     while(run){
@@ -211,6 +215,8 @@ int main(int argc, char* argv[]){
         SDL_SetRenderDrawBlendMode(renderer,SDL_BLENDMODE_ADD);
 
 	game.draw(renderer, dm);
+
+        SDL_RenderCopy(renderer, texture, NULL, &imgLoc);
 
         SDL_RenderPresent(renderer);
         SDL_Delay( 16 ); // less than 60fps
